@@ -13,8 +13,6 @@ contracts/artifacts/
 contracts/typechain-types/
 
 # env
-.env
-.env.local
 .env*.local
 
 # logs / OS
@@ -26,3 +24,4 @@ Thumbs.db
 .idea/
 .vscode/
 .cursor/
+config.bat

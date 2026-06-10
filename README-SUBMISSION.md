@@ -2,8 +2,8 @@
 
 - **Name:** Vishal Chaturvedi
 - **Email:** vishal.chaturvedi@encoresky.com
-- **QuestEscrow Contract Address:** `0x610178dA211FEF7D417bC0e6FeD39F05609AD788`
-- **MockUSDC Contract Address:** `0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e`
+- **QuestEscrow Contract Address:** `0xa513E6E4b8f2a923D98304ec87F64353C4D5C853`
+- **MockUSDC Contract Address:** `0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6`
 - **GitHub Repository URL:** `https://github.com/vishalchaturvediencoresky/Web3-Developer-Skills-Test.git`
 
 ## How to Run
