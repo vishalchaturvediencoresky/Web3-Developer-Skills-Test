@@ -28,7 +28,7 @@ export default function QuestDetailPage() {
   const now = Math.floor(Date.now() / 1000);
   const reviewEnded = quest.reviewDeadline > 0n && now > Number(quest.reviewDeadline);
 
-  async function run(action: () => Promise<void>, label: string) {
+  async function run(action: () => Promise<unknown>, label: string) {
     if (!isConnected) {
       toast.error("Connect wallet first (sidebar)");
       return;
@@ -41,6 +41,8 @@ export default function QuestDetailPage() {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
   }
+
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -105,10 +107,6 @@ export default function QuestDetailPage() {
 
         <section className="surface h-fit space-y-4 p-6 lg:sticky lg:top-8">
           <h2 className="font-semibold">Actions</h2>
-          <p className="text-sm text-amber-800">
-            TODO: implement transaction hooks in <code className="text-xs">lib/hooks/useQuestEscrow.ts</code> so
-            these buttons send real transactions.
-          </p>
 
           {quest.status === 0 && !isPoster && (
             <button

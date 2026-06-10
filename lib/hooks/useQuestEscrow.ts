@@ -12,19 +12,19 @@ import { parseEther, zeroAddress } from "viem";
 import { QUEST_ESCROW_ADDRESS } from "@/lib/contracts/addresses";
 import { questEscrowAbi, QUEST_STATUS_LABELS } from "@/lib/contracts/questEscrowAbi";
 
-type QuestTuple = readonly [
-  `0x${string}`,
-  `0x${string}`,
-  string,
-  string,
-  bigint,
-  `0x${string}`,
-  bigint,
-  bigint,
-  bigint,
-  number,
-  string,
-];
+type QuestStruct = {
+  poster: `0x${string}`;
+  worker: `0x${string}`;
+  title: string;
+  description: string;
+  reward: bigint;
+  token: `0x${string}`;
+  acceptDeadline: bigint;
+  reviewPeriod: bigint;
+  reviewDeadline: bigint;
+  status: number;
+  deliverableUri: string;
+};
 
 export type QuestView = {
   id: bigint;
@@ -60,25 +60,25 @@ export function useQuest(questId: bigint | undefined) {
     query: { enabled: questId !== undefined },
   });
 
-  const row = data as QuestTuple | undefined;
+  const row = data as QuestStruct | undefined;
   const quest: QuestView | null =
     row && questId !== undefined
       ? {
-          id: questId,
-          poster: row[0],
-          worker: row[1],
-          title: row[2],
-          description: row[3],
-          reward: row[4],
-          token: row[5],
-          acceptDeadline: row[6],
-          reviewPeriod: row[7],
-          reviewDeadline: row[8],
-          status: row[9],
-          statusLabel: QUEST_STATUS_LABELS[row[9]] ?? "Open",
-          deliverableUri: row[10],
-          isEth: row[5].toLowerCase() === zeroAddress,
-        }
+        id: questId,
+        poster: row.poster,
+        worker: row.worker,
+        title: row.title,
+        description: row.description,
+        reward: row.reward,
+        token: row.token,
+        acceptDeadline: row.acceptDeadline,
+        reviewPeriod: row.reviewPeriod,
+        reviewDeadline: row.reviewDeadline,
+        status: row.status,
+        statusLabel: QUEST_STATUS_LABELS[row.status] ?? "Open",
+        deliverableUri: row.deliverableUri,
+        isEth: row.token.toLowerCase() === zeroAddress,
+      }
       : null;
 
   return { quest, refetch, isLoading };
@@ -87,15 +87,19 @@ export function useQuest(questId: bigint | undefined) {
 export function useQuestList() {
   const { data: count } = useQuestCount();
   const publicClient = usePublicClient();
+  console.log(publicClient, "publicClient")
   const [quests, setQuests] = useState<QuestView[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     const total = count as bigint | undefined;
+    console.log('total', total, count);
+
     if (!publicClient || !total || total === 0n) {
       setQuests([]);
       return;
     }
+
     setLoading(true);
     try {
       const items: QuestView[] = [];
@@ -105,22 +109,22 @@ export function useQuestList() {
           abi: questEscrowAbi,
           functionName: "getQuest",
           args: [id],
-        })) as QuestTuple;
+        })) as QuestStruct;
         items.push({
           id,
-          poster: data[0],
-          worker: data[1],
-          title: data[2],
-          description: data[3],
-          reward: data[4],
-          token: data[5],
-          acceptDeadline: data[6],
-          reviewPeriod: data[7],
-          reviewDeadline: data[8],
-          status: data[9],
-          statusLabel: QUEST_STATUS_LABELS[data[9]] ?? "Open",
-          deliverableUri: data[10],
-          isEth: data[5].toLowerCase() === zeroAddress,
+          poster: data.poster,
+          worker: data.worker,
+          title: data.title,
+          description: data.description,
+          reward: data.reward,
+          token: data.token,
+          acceptDeadline: data.acceptDeadline,
+          reviewPeriod: data.reviewPeriod,
+          reviewDeadline: data.reviewDeadline,
+          status: data.status,
+          statusLabel: QUEST_STATUS_LABELS[data.status] ?? "Open",
+          deliverableUri: data.deliverableUri,
+          isEth: data.token.toLowerCase() === zeroAddress,
         });
       }
       setQuests(items.reverse());
@@ -138,48 +142,108 @@ export function useQuestList() {
 
 /** Implement write helpers with useWriteContract + useWaitForTransactionReceipt. */
 export function useCreateQuest() {
-  const { isConnected } = useAccount();
+  const { writeContractAsync, data: hash } = useWriteContract();
 
-  const createEthQuest = async (_input: {
+  const { isLoading: isPending } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const createEthQuest = async ({
+    title,
+    description,
+    rewardEth,
+    acceptDeadline,
+    reviewPeriodHours,
+  }: {
     title: string;
     description: string;
     rewardEth: string;
     acceptDeadline: Date;
     reviewPeriodHours: number;
   }) => {
-    if (!isConnected) throw new Error("Connect MetaMask or another Web3 wallet first");
-    // TODO: useWriteContract → createQuest with value: parseEther(rewardEth), token: zeroAddress
-    throw new Error("TODO: implement useCreateQuest.createEthQuest");
+    const reward = parseEther(rewardEth);
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "createQuest",
+      args: [
+        title,
+        description,
+        reward,
+        BigInt(Math.floor(acceptDeadline.getTime() / 1000)),
+        BigInt(reviewPeriodHours * 60 * 60),
+        zeroAddress,
+      ],
+      value: reward,
+    });
   };
 
-  return { createEthQuest, isPending: false };
+  return {
+    createEthQuest,
+    isPending,
+  };
 }
 
 export function useQuestActions(questId: bigint) {
+  const { writeContractAsync, data: hash } = useWriteContract();
+
+  const { isLoading: isPending } = useWaitForTransactionReceipt({
+    hash,
+  });
+
   const accept = async () => {
-    // TODO: writeContract acceptQuest(questId)
-    throw new Error("TODO: implement accept");
-  };
-  const submit = async (_deliverableUri: string) => {
-    // TODO: writeContract submitWork(questId, deliverableUri)
-    throw new Error("TODO: implement submit");
-  };
-  const approve = async () => {
-    // TODO: writeContract approveAndPay(questId)
-    throw new Error("TODO: implement approve");
-  };
-  const claimTimeout = async () => {
-    // TODO: writeContract claimTimeoutPayout(questId)
-    throw new Error("TODO: implement claimTimeout");
-  };
-  const cancel = async () => {
-    // TODO: writeContract cancelQuest(questId)
-    throw new Error("TODO: implement cancel");
-  };
-  const refund = async () => {
-    // TODO: writeContract refundPoster(questId)
-    throw new Error("TODO: implement refund");
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "acceptQuest",
+      args: [questId],
+    });
   };
 
-  return { accept, submit, approve, claimTimeout, cancel, refund, isPending: false };
+  const submit = async (deliverableUri: string) => {
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "submitWork",
+      args: [questId, deliverableUri],
+    });
+  };
+
+  const approve = async () => {
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "approveAndPay",
+      args: [questId],
+    });
+  };
+
+  const claimTimeout = async () => {
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "claimTimeoutPayout",
+      args: [questId],
+    });
+  };
+
+  const cancel = async () => {
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "cancelQuest",
+      args: [questId],
+    });
+  };
+
+  const refund = async () => {
+    return writeContractAsync({
+      address: QUEST_ESCROW_ADDRESS,
+      abi: questEscrowAbi,
+      functionName: "refundPoster",
+      args: [questId],
+    });
+  };
+
+  return { accept, submit, approve, claimTimeout, cancel, refund, isPending };
 }

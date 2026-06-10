@@ -23,35 +23,32 @@ export function QuestStepper({ currentStatus }: { currentStatus: number }) {
   return (
     <ol className="flex flex-col gap-0 sm:flex-row sm:items-center">
       {STEPS.map((step, i) => {
-        const done = currentStatus > step.status;
+        const done = currentStatus + 1 > step.status;
         const active = currentStatus === step.status;
         return (
           <li key={step.status} className="flex flex-1 items-center gap-2 sm:flex-col sm:gap-1">
             <div className="flex items-center gap-2 sm:flex-col">
               <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                  done
-                    ? "bg-[var(--accent)] text-white"
-                    : active
-                      ? "border-2 border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--accent-hover)]"
-                      : "border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]"
-                }`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${done
+                  ? "bg-[var(--accent)] text-white"
+                  : active
+                    ? "border-2 border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--accent-hover)]"
+                    : "border border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]"
+                  }`}
               >
                 {done ? "✓" : i + 1}
               </span>
               <span
-                className={`text-xs font-medium ${
-                  active ? "text-[var(--accent-hover)]" : done ? "text-[var(--foreground)]" : "text-[var(--muted)]"
-                }`}
+                className={`text-xs font-medium ${active ? "text-[var(--accent-hover)]" : done ? "text-[var(--foreground)]" : "text-[var(--muted)]"
+                  }`}
               >
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`hidden h-0.5 flex-1 sm:block ${
-                  currentStatus > step.status ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                }`}
+                className={`hidden h-0.5 flex-1 sm:block ${currentStatus > step.status ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+                  }`}
                 aria-hidden
               />
             )}
